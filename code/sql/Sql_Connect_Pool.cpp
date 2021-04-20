@@ -78,16 +78,20 @@ void Sql_Connect_Pool::ClosePool(){
         mysql_library_end();
 }
 
-
+/*
 //g++ -std=c++14 -O2 -Wall -g Sql_Connect_Pool.cpp -o test -pthread -lmysqlclient
 //root用户下运行./test
 int main(){
-        Sql_Connect_Pool::Instance()->Init("localhost",0,"root","1","cwd_db",10);
+        Sql_Connect_Pool::Instance()->Init("localhost",3306,"root","1","cwd_db",10);
         MYSQL* test_sql;
         printf("Sql_Connect_Pool::Instance()->GET_Free_Connect_NUM()==%d\n",
                 Sql_Connect_Pool::Instance()->GET_Free_Connect_NUM());
-        //std::cout<<Sql_Connect_Pool::Instance()->GET_Free_Connect_NUM()<<std::endl;
         test_sql = Sql_Connect_Pool::Instance()->Get_Connect();
         printf("mysql_info(test_sql)=%s\n",mysql_info(test_sql));
-        //std::cout<<<<std::endl;
+        printf("test_sql->info=%s\n",test_sql->info);
+        printf("test_sql->host_info=%s\n",test_sql->host_info);
+        printf("test_sql->host=%s\n",test_sql->host);
+        printf("test_sql->passwd=%s\n",test_sql->passwd);
+        printf("test_sql->port=%d\n",test_sql->port);
 }
+*/
