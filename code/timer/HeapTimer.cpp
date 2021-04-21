@@ -16,8 +16,8 @@ HeapTimer::~HeapTimer()
 }
 
 void HeapTimer::Swap_Nodes(size_t i,size_t j){
-        assert(i>0 && i<heap_.size());
-        assert(j>0 && j<heap_.size());
+        assert(i>=0 && i<heap_.size());
+        assert(j>=0 && j<heap_.size());
         
         //swap交换。看了一眼c++11的实现，用了模板和移动语义，很快，不需要自己写；
         std::swap(heap_[i],heap_[j]);
@@ -31,7 +31,7 @@ void HeapTimer::Swap_Nodes(size_t i,size_t j){
 
 //将i节点一路向上作交换，直到到它该在的位置
 void HeapTimer::Shift_Up(size_t i){
-        assert(i>0 && i<heap_.size());
+        assert(i>=0 && i<heap_.size());
         int j=(i-1)/2;
         while (i>0){
                 if (heap_[j]<heap_[i])  break;
@@ -136,3 +136,29 @@ int HeapTimer::Get_Next_Tick(){
         }
         return res;
 }
+
+
+
+
+/*
+//for test only
+void test_cb2(const int id){
+        printf("TimerNode:ID==%d      Running\n",id);
+}
+
+int main(){
+        HeapTimer heapTimer;
+        for (int i=0;i<56;i++){
+                //heapTimer.Add_Node(i,10*(i%13),test_cb1);
+                //heapTimer.Add_Node(i,10*(i%13),std::bind(test_cb,heapTimer.heap_[i]));
+                heapTimer.Add_Node(i,10*(i%13),std::bind(test_cb2,i));
+        }
+        int res=heapTimer.Get_Next_Tick();
+        while (res>0){
+                printf("heapTimer.Get_Next_Tick()====%d\n",res);
+                usleep(res*1000);
+                res=heapTimer.Get_Next_Tick();
+        }
+        printf("That's  all.\n");
+}
+*/
