@@ -142,6 +142,7 @@ int HeapTimer::Get_Next_Tick(){
 
 /*
 //for test only
+//g++ -std=c++14 -O2 -Wall -g HeapTimer.cpp -o test -pthread -lmysqlclient
 void test_cb2(const int id){
         printf("TimerNode:ID==%d      Running\n",id);
 }
