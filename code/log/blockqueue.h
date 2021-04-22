@@ -56,4 +56,4 @@ public:
         bool pop(T&item,int timeout);
 };
 
-#endif
+#endif //BLOCKQUEUE_H
