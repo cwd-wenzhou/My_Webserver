@@ -54,6 +54,8 @@ public:
         bool pop(T&item);
 
         bool pop(T&item,int timeout);
+
+        void flush();
 };
 
 #endif //BLOCKQUEUE_H
