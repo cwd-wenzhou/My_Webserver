@@ -135,4 +135,4 @@ bool BlockDeque<T>::pop(T&item,int timeout){
 template<class T>
 void BlockDeque<T>::flush() {
     condConsumer_.notify_one();
-};
+}
