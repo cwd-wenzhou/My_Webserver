@@ -42,20 +42,10 @@
 #include <cstring>
 class Buffer
 {
-private:
-        //使用atomic原子操作，定义当前读到的位置和写的位置
-        std::atomic<std::size_t> readPos_;
-        std::atomic<std::size_t> writePos_;
-        
-        std::vector<char> buffer_;//储存字符
 
-        const char * BeginPtr() const;
-        char* BeginPtr();//因为一些函数调用要用char* 而不是const char*.写一个重载
-
-        void MakeSpace(size_t len);//使buffer有len长度的可写空间
 
 public:
-        Buffer(/* args */);
+        Buffer(int initBuffSize = 1024);
         ~Buffer();
 
         size_t Writeable_Bytes() const;
@@ -63,10 +53,11 @@ public:
         size_t Prependable_Bytes() const;
 
         const char* ReadPos_Ptr_() const;
-        const char* WritePos_Ptr_() const;
+        const char* WritePos_Ptr_const_() const;
+        char* WritePos_Ptr_() ;
 
         void Ensure_Writeable(size_t len);//确保buffer剩余空间>len，可以写入
-        void haswritten(size_t len);
+        void HasWritten(size_t len);
 
         void Retrieve(size_t len);
         void RetrieveUntil(const char* end);
@@ -80,6 +71,17 @@ public:
 
         ssize_t ReadFd(int fd, int* Errno);
         ssize_t WriteFd(int fd, int* Errno);
+
+private:
+        std::vector<char> buffer_;//储存字符
+        //使用atomic原子操作，定义当前读到的位置和写的位置
+        std::atomic<std::size_t> readPos_;
+        std::atomic<std::size_t> writePos_;
+
+        const char * BeginPtr() const;
+        char* BeginPtr();//因为一些函数调用要用char* 而不是const char*.写一个重载
+
+        void MakeSpace(size_t len);//使buffer有len长度的可写空间        
 };
 
 

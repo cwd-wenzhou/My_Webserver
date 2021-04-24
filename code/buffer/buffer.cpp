@@ -5,9 +5,7 @@
  */ 
 #include "buffer.h"
 
-Buffer::Buffer(/* args */)
-{
-}
+Buffer::Buffer(int initBuffSize) : buffer_(initBuffSize), readPos_(0), writePos_(0) {}
 
 Buffer::~Buffer()
 {
@@ -28,7 +26,7 @@ void Buffer::MakeSpace(size_t len){
         }
         else{
                 size_t readable=Readable_Bytes();
-                std::copy(ReadPos_Ptr_(),WritePos_Ptr_(),BeginPtr());
+                std::copy(ReadPos_Ptr_(),WritePos_Ptr_const_(),BeginPtr());
                 readPos_=0;
                 writePos_=readable;
                 assert(readable == Readable_Bytes());//个人认为是多余的代码
@@ -51,7 +49,11 @@ const char* Buffer::ReadPos_Ptr_() const{
         return BeginPtr()+readPos_;
 }
 
-const char* Buffer::WritePos_Ptr_() const{
+const char* Buffer::WritePos_Ptr_const_() const{
+        return BeginPtr()+writePos_;
+}
+
+char* Buffer::WritePos_Ptr_() {
         return BeginPtr()+writePos_;
 }
 
@@ -62,7 +64,7 @@ void Buffer::Ensure_Writeable(size_t len) {
         assert(Writeable_Bytes() >= len);
 }
 
-void Buffer::haswritten(size_t len) {
+void Buffer::HasWritten(size_t len) {
         writePos_+=len;
 }
 
@@ -97,6 +99,7 @@ void Buffer::Append(const char* str, size_t len){
         assert(str);
         Ensure_Writeable(len);
         std::copy(str,str+len,WritePos_Ptr_());
+        HasWritten(len);
 }
 
 void Buffer::Append(const std::string& str){

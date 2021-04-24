@@ -34,3 +34,6 @@
 
 # test
 test
+
+#log
+*.log
