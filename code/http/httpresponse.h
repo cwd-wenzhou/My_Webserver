@@ -2,6 +2,8 @@
  * @Author       : cwd
  * @Date         : 2021-4-25
  * @Place  : hust
+ * 知识点：
+ *              1：mmap内存映射
  */ 
 #ifndef HTTP_RESPONSE_H
 #define HTTP_RESPONSE_H

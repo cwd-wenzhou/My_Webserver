@@ -15,8 +15,8 @@
 
 #include "../buffer/buffer.h"
 #include "../log/log.h"
-#include "../pool/sqlconnpool.h"
-#include "../pool/sqlconnRAII.h"
+#include "../sql/Sql_Connect_Pool.h"
+#include "../sql/Sql_Connect_RAII.h"
 
 class HttpRequest {
 public:
