@@ -2,6 +2,10 @@
  * @Author       : cwd
  * @Date         : 2021-4-20
  * @Place  : hust
+ * 封装一下，把
+ *          MYSQL *sql_;
+ *          Sql_Connect_Pool* connpool_;
+ * 封装到一个类里面
  */ 
 
 #ifndef SQLCONNRAII_H
