@@ -9,16 +9,14 @@
 
 #include "httpconn.h"
 
-HttpConn::HttpConn(/* args */)
-{
+HttpConn::HttpConn(/* args */){
         fd_=-1;
         addr_={0};
         isClose_=true;
 }
 
-HttpConn::~HttpConn()
-{
-
+HttpConn::~HttpConn(){
+        Close();
 }
 
 const char* HttpConn::GetIP() const{
