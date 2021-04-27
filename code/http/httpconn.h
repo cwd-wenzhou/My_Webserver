@@ -37,6 +37,7 @@ public:
         HttpConn(/* args */);
         ~HttpConn();
 
+        static const char* srcDir;//资源目录路径
         static std::atomic<int> userCount;//http连接数计数
         static bool isET;//使用ET还是LT
 
@@ -47,9 +48,11 @@ public:
         sockaddr_in GetAddr() const;
 
         void Init(int fd, const sockaddr_in &addr);
-
+        void Close();
         ssize_t read(int* SaveErrno);
         ssize_t write(int* SaveErrno);
+
+        bool process();
 };
 
 

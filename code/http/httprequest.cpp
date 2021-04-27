@@ -57,7 +57,7 @@ bool HttpRequest::parse(Buffer& buff) {
         if(lineEnd == buff.WritePos_Ptr_()) { break; }
         buff.RetrieveUntil(lineEnd + 2);
     }
-    LOG_DEBUG("[%s], [%s], [%s]", method_.c_str(), path_.c_str(), version_.c_str());
+    Log_Debug("[%s], [%s], [%s]", method_.c_str(), path_.c_str(), version_.c_str());
     return true;
 }
 
@@ -86,7 +86,7 @@ bool HttpRequest::ParseRequestLine_(const string& line) {
         state_ = HEADERS;
         return true;
     }
-    LOG_ERROR("RequestLine Error");
+    Log_Error("RequestLine Error");
     return false;
 }
 
@@ -105,7 +105,7 @@ void HttpRequest::ParseBody_(const string& line) {
     body_ = line;
     ParsePost_();
     state_ = FINISH;
-    LOG_DEBUG("Body:%s, len:%d", line.c_str(), line.size());
+    Log_Debug("Body:%s, len:%d", line.c_str(), line.size());
 }
 
 
@@ -122,7 +122,7 @@ void HttpRequest::ParsePost_() {
         ParseFromUrlencoded_();
         if(DEFAULT_HTML_TAG.count(path_)) {
             int tag = DEFAULT_HTML_TAG.find(path_)->second;
-            LOG_DEBUG("Tag:%d", tag);
+            Log_Debug("Tag:%d", tag);
             if(tag == 0 || tag == 1) {
                 bool isLogin = (tag == 1);//登陆=1；注册等于0；
                 if(UserVerify(post_["username"], post_["password"], isLogin)) {
@@ -165,7 +165,7 @@ void HttpRequest::ParseFromUrlencoded_() {
             value = body_.substr(j, i - j);
             j = i + 1;
             post_[key] = value;
-            LOG_DEBUG("%s = %s", key.c_str(), value.c_str());
+            Log_Debug("%s = %s", key.c_str(), value.c_str());
             break;
         default:
             break;
@@ -180,9 +180,9 @@ void HttpRequest::ParseFromUrlencoded_() {
 
 bool HttpRequest::UserVerify(const string &name, const string &pwd, bool isLogin) {
     if(name == "" || pwd == "") { return false; }
-    LOG_INFO("Verify name:%s pwd:%s", name.c_str(), pwd.c_str());
+    Log_Info("Verify name:%s pwd:%s", name.c_str(), pwd.c_str());
     MYSQL* sql;
-    SqlConnRAII(&sql,  SqlConnPool::Instance());
+    SqlConnRAII(&sql,  Sql_Connect_Pool::Instance());
     assert(sql);
     
     bool flag = false;
@@ -195,7 +195,7 @@ bool HttpRequest::UserVerify(const string &name, const string &pwd, bool isLogin
     snprintf(order, 256, "SELECT username, password FROM user WHERE username='%s' LIMIT 1", name.c_str());
     // LIMIT 1 即返回一条结果的意思；
     //unsigned int j = mysql_num_fields(res); 这里的j=1;
-    LOG_DEBUG("%s", order);
+    Log_Debug("%s", order);
 
     if(mysql_query(sql, order)) { 
         //进入该if表示找不到用户名和密码
@@ -206,38 +206,38 @@ bool HttpRequest::UserVerify(const string &name, const string &pwd, bool isLogin
     //fields = mysql_fetch_fields(res);
     //这个while只会执行一次，第二次mysql_fetch_row结果就是nullptr；
     while(MYSQL_ROW row = mysql_fetch_row(res)) {
-        LOG_DEBUG("MYSQL ROW: %s %s", row[0], row[1]);
+        Log_Debug("MYSQL ROW: %s %s", row[0], row[1]);
         string password(row[1]);
         /* 登陆行为*/
         if(isLogin) {
             if(pwd == password) { flag = true; }
             else {
                 flag = false;
-                LOG_DEBUG("pwd error!");
+                Log_Debug("pwd error!");
             }
         } 
         else { 
             //注册，用户名已使用
             flag = false; 
-            LOG_DEBUG("user used!");
+            Log_Debug("user used!");
         }
     }
     mysql_free_result(res);
 
     /* 注册行为 且 用户名未被使用*/
     if(!isLogin && flag == true) {
-        LOG_DEBUG("regirster!");
+        Log_Debug("regirster!");
         bzero(order, 256);
         snprintf(order, 256,"INSERT INTO user(username, password) VALUES('%s','%s')", name.c_str(), pwd.c_str());
-        LOG_DEBUG( "%s", order);
+        Log_Debug( "%s", order);
         if(mysql_query(sql, order)) { 
-            LOG_DEBUG( "Insert error!");
+            Log_Debug( "Insert error!");
             flag = false; 
         }
         flag = true;
     }
-    SqlConnPool::Instance()->FreeConn(sql);
-    LOG_DEBUG( "UserVerify success!!");
+    Sql_Connect_Pool::Instance()->Free_Connect(sql);
+    Log_Debug( "UserVerify success!!");
     return flag;
 }
 

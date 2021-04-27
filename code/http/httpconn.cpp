@@ -86,3 +86,41 @@ ssize_t HttpConn::write(int* SaveErrno){
         }while (isET || (iov_[0].iov_len + iov_[1].iov_len>len));
         return len;
 }
+
+void HttpConn::Close(){
+        response_.UnmapFile();//解除文件映射
+        if (!isClose_){
+                isClose_=true;
+                userCount--;
+                close(fd_);
+                Log_Info("Client[%d](%s:%d) quit, UserCount:%d", fd_, GetIP(), GetPort(), (int)userCount);
+        }
+}
+
+bool HttpConn::process(){
+        request_.Init();
+        if (readBuff_.Readable_Bytes()<=0) return false;
+        else if (request_.parse(readBuff_)){
+                Log_Debug("%s",request_.path().c_str());
+                response_.Init(srcDir,request_.path(),request_.IsKeepAlive(),200);
+        }
+        else{
+                response_.Init(srcDir,request_.path(),false,400);//请求报文已经有错了，返回一个响应报文就行了
+        }
+
+        response_.MakeResponse(writeBuff_);//向writeBuff_写入响应报文
+        
+        //响应头
+        iov_[0].iov_base  = const_cast<char*>(writeBuff_.ReadPos_Ptr_());
+        iov_[0].iov_len = writeBuff_.Readable_Bytes();
+        iovCnt_=1;
+
+        //文件
+        if (response_.FileLen()>0 && response_.File()){
+                iov_[1].iov_base = response_.File();
+                iov_[1].iov_len = response_.FileLen();
+                iovCnt_ = 2;
+        }
+        Log_Debug("filesize:%d, %d  to %d", response_.FileLen() , iovCnt_, iov_[0].iov_len + iov_[1].iov_len);
+        return true;
+}
