@@ -117,6 +117,7 @@ bool WebServer::InitSocket_(){
                 return false;
         }
 
+        //绑定套接字
         ret = bind(listenFd_,(struct sockaddr*)&addr,sizeof(addr));
         if(ret < 0) {
                 Log_Error("Bind Port:%d error!", port_);
@@ -124,6 +125,7 @@ bool WebServer::InitSocket_(){
                 return false;
         }
 
+        //监听套接字
         ret = listen(listenFd_,6);
         if(ret < 0) {
                 Log_Error("Listen port:%d error!", port_);
@@ -131,6 +133,7 @@ bool WebServer::InitSocket_(){
                 return false;
         }
 
+        //放到epoll里面给epoll管
         ret = epoller_->AddFd(listenFd_,listenEvent_|EPOLLIN);
         if (ret ==0){
                 Log_Error("Add listen ERROR！");
