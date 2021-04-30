@@ -81,7 +81,7 @@ ssize_t HttpConn::write(int* SaveErrno){
                         iov_[0].iov_len -= len; 
                         writeBuff_.Retrieve(len);
                 }
-        }while (isET || (iov_[0].iov_len + iov_[1].iov_len>len));
+        }while (isET || (ToWriteBytes()>10240));
         return len;
 }
 

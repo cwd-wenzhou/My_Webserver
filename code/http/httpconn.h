@@ -47,6 +47,10 @@ public:
         bool IsKeepAlive() const;
         sockaddr_in GetAddr() const;
 
+        int ToWriteBytes() { 
+                return iov_[0].iov_len + iov_[1].iov_len; 
+        }
+
         void Init(int fd, const sockaddr_in &addr);
         void Close();
         ssize_t read(int* SaveErrno);

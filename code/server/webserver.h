@@ -2,6 +2,8 @@
  * @Author       : cwd
  * @Date         : 2021-4-27
  * @Place  : hust
+ * 知识点：
+ *              1：bind 绑定的函数是成员函数的时候，后面跟的第一个要是this
  */ 
 #ifndef WEBSERVER_H
 #define WEBSERVER_H
@@ -35,17 +37,18 @@ public:
         ~WebServer();
         void Start();
 private:
-        bool InitSocket_();
-        void InitEventMode_(int trigMode);
-        void AddClient_(int fd,sockaddr_in addr);
 
-        void DealListen_();
-        void DealWrite_(HttpConn* client);
-        void DealRead_(HttpConn* client);
+        void InitEventMode_(int trigMode);
+        bool InitSocket_();
+        void AddClient_(int fd,sockaddr_in addr);
 
         void SendError_(int fd, const char*info);
         void ExtentTime_(HttpConn* client);
         void CloseConn_(HttpConn* client);
+        
+        void DealListen_();
+        void DealWrite_(HttpConn* client);
+        void DealRead_(HttpConn* client);
 
         void OnRead_(HttpConn* client);
         void OnWrite_(HttpConn* client);

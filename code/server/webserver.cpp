@@ -145,6 +145,179 @@ bool WebServer::InitSocket_(){
         return true;
 }
 
+void WebServer::AddClient_(int fd,sockaddr_in addr){
+        assert(fd>0);
+        users_[fd].Init(fd,addr);
+        if (timeoutMS_>0){
+                //若设置超时，由timer管理连接超时
+                timer_->Add_Node(fd,timeoutMS_,std::bind(&WebServer::CloseConn_,this,&users_[fd]));
+        }
+        epoller_->AddFd(fd,EPOLLIN | connEvent_);
+        SetFdNonblock(fd);
+        Log_Info("Client[%d] in!", users_[fd].GetFd());
+}
+
+
+void WebServer::SendError_(int fd,const char*info){
+        //直接向这个socket发送报错信息info 然后关掉这个fd
+        assert(fd>0);
+        int ret =send(fd,info,strlen(info),0);
+        if (ret<0)
+                //错误信息都发不过去，log里记录一下
+                Log_Warn("SendError_ to client[%d] error",fd);
+        close(fd);
+}
+
+//连接完成后，更新（重置）一下time里面的这个fd对应的超时的时间
+void WebServer::ExtentTime_(HttpConn* client){
+        assert(client);
+        if(timeoutMS_ > 0) { timer_->Adjust_Node(client->GetFd(), timeoutMS_); }
+}
+
+void WebServer::CloseConn_(HttpConn* client){
+        assert(client);
+        Log_Info("Client[%d] quit!",client->GetFd());
+        epoller_->DelFd(client->GetFd());//从epoll中删除对该连接的监管
+        client->Close();
+}
+
+
+ void WebServer::DealListen_(){
+        struct sockaddr_in addr;
+        socklen_t len = sizeof(addr);
+        do {
+                int fd = accept(listenFd_,(struct sockaddr*)&addr,&len);
+                if (fd<0){
+                        //accept出错
+                        Log_Error("accept error");
+                        return;
+                }
+                else if (HttpConn::userCount>=MAX_FD){
+                        //已连接个数达到最大值
+                        SendError_(fd,"Server busy");
+                        Log_Warn("Client is Full");
+                        return ;
+                }
+                AddClient_(fd,addr);
+        }while (listenEvent_ & EPOLLET);//若为ET模式，需要不停循环
+ }
+
+//更新一下超时时间，把Onwrite加入到线程池
+ void WebServer::DealWrite_(HttpConn* client){
+        assert(client);
+        ExtentTime_(client);
+        threadpool_->AddTask(std::bind(&WebServer::OnWrite_,this,client));
+ }
+
+ void WebServer::DealRead_(HttpConn* client){
+        assert(client);
+        ExtentTime_(client);
+        threadpool_->AddTask(std::bind(&WebServer::OnRead_,this,client));
+ }
+
+
+void WebServer::OnRead_(HttpConn* client){
+        assert(client);
+        int ret = -1;
+        int readErrno = 0;
+        ret = client->read(&readErrno);
+        if(ret <= 0 && readErrno != EAGAIN) {
+                CloseConn_(client);
+        return;
+    }
+    OnProcess(client);
+}
+
+void WebServer::OnWrite_(HttpConn* client){
+        assert(client);
+        int ret = -1;
+        int writeErrno = 0;
+        ret = client->write(&writeErrno);
+        if (client->ToWriteBytes()==0){
+                //传输完成
+                if (client->IsKeepAlive()){
+                        OnProcess(client);
+                        return;
+                }
+        }
+        else if (ret<0){
+                //对非阻塞socket而言，EAGAIN不是一种错误
+                if (writeErrno = EAGAIN){
+                        epoller_->ModFd(client->GetFd(), connEvent_ | EPOLLOUT);
+                        return;
+                }
+        }
+        //正常情况前面都处理了，程序走到这里，说明有问题、
+        //关掉client连接
+        CloseConn_(client);
+}
+
+
+/*
+EPOLLIN ：表示对应的文件描述符可以读（包括对端SOCKET正常关闭）；
+EPOLLOUT：表示对应的文件描述符可以写；
+*/
+void WebServer::OnProcess(HttpConn* client) {
+        if(client->process()) {
+                epoller_->ModFd(client->GetFd(), connEvent_ | EPOLLOUT);
+        } else {
+                epoller_->ModFd(client->GetFd(), connEvent_ | EPOLLIN);
+        }
+}
+
+
+
+/*
+EPOLLIN ：表示对应的文件描述符可以读（包括对端SOCKET正常关闭）；
+EPOLLOUT：表示对应的文件描述符可以写；
+
+EPOLLRDHUP ：表示对应的文件描述符读关闭；
+EPOLLERR：表示对应的文件描述符发生错误；
+EPOLLHUP：表示对应的文件描述符被挂断；
+*/
+void WebServer::Start(){
+        int timeMS=-1;//epoll wait timeout == -1 无事件将阻塞
+        if (!isClose_)
+                Log_Info("===============SERVET  START=============");
+        while (!isClose_){
+                //把超时的线程都清出去
+                //并获得下一次出现超时线程的时间timeMS
+                if(timeoutMS_ > 0) {
+                        timeMS = timer_->Get_Next_Tick();
+                }
+
+                int eventCnt = epoller_->Wait(timeMS);
+                //即在下一次出现超时线程前，用epoll监管wait一下
+
+                for (int i=0;i<eventCnt;i++){
+                        //处理epoll里wait到的事件
+                        int fd = epoller_->GetEventFd(i);
+                        uint32_t events=epoller_->GetEvents(i);
+
+                        if (fd=listenFd_){
+                                DealListen_();
+                        }
+                        else if(events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)){
+                                assert(users_.count(fd)>0);
+                                CloseConn_(&users_[fd]);
+                                //关掉了应该删掉&users_[fd]
+                                users_.erase(fd);
+                        }
+                        else if (events & EPOLLIN){
+                                assert(users_.count(fd)>0);
+                                DealRead_(&users_[fd]);
+                        }
+                        else if (events & EPOLLOUT){
+                                assert(users_.count(fd)>0);
+                                DealWrite_(&users_[fd]);
+                        }
+                        else 
+                                Log_Error("Unexpected event");
+                }
+
+        }
+}
+
 int WebServer::SetFdNonblock(int fd){
         assert(fd>0);
         int flags=fcntl(fd,F_GETFD,0);
