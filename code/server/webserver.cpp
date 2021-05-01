@@ -77,7 +77,7 @@ void WebServer::InitEventMode_(int trigMode){
 bool WebServer::InitSocket_(){
         int ret;
         struct sockaddr_in addr;
-        if (port_>65535 | port_<1024){
+        if (port_>65535 || port_<1024){
                 Log_Error("Port:%d error",port_);
                 return false;
         }
@@ -242,7 +242,7 @@ void WebServer::OnWrite_(HttpConn* client){
         }
         else if (ret<0){
                 //对非阻塞socket而言，EAGAIN不是一种错误
-                if (writeErrno = EAGAIN){
+                if (writeErrno == EAGAIN){
                         epoller_->ModFd(client->GetFd(), connEvent_ | EPOLLOUT);
                         return;
                 }
@@ -294,7 +294,7 @@ void WebServer::Start(){
                         int fd = epoller_->GetEventFd(i);
                         uint32_t events=epoller_->GetEvents(i);
 
-                        if (fd=listenFd_){
+                        if (fd == listenFd_){
                                 DealListen_();
                         }
                         else if(events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)){

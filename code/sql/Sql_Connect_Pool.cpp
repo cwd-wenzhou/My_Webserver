@@ -82,6 +82,7 @@ void Sql_Connect_Pool::ClosePool(){
 //g++ -std=c++14 -O2 -Wall -g Sql_Connect_Pool.cpp -o test -pthread -lmysqlclient
 //root用户下运行./test
 int main(){
+        //Init(const char* host, int port,const char* user,const char* passwd, const char* db, int connSize)
         Sql_Connect_Pool::Instance()->Init("localhost",3306,"root","1","cwd_db",10);
         MYSQL* test_sql;
         printf("Sql_Connect_Pool::Instance()->GET_Free_Connect_NUM()==%d\n",

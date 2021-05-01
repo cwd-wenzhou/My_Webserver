@@ -28,6 +28,10 @@
  *              retrieve the additional arguments after parameter paramN.
  *      8.编译warning：[-Wreorder] ：代码中的成员变量的初始化顺序和它们实际执行时初始化顺序不一致，给出警告
  */ 
+
+#ifndef LOG_H
+#define LOG_H
+
 #include <mutex>
 #include <thread>
 #include <sys/time.h>
@@ -52,6 +56,7 @@ using namespace std;
 #define Log_Info(format, ...)      do {LOG_BASE(1,format,## __VA_ARGS__)} while(0);
 #define Log_Warn(format, ...)   do {LOG_BASE(2,format,## __VA_ARGS__)} while(0);
 #define Log_Error(format, ...)   do {LOG_BASE(3,format,## __VA_ARGS__)} while(0);
+
 
 class Log
 {
@@ -101,3 +106,4 @@ public:
 
 };
 
+#endif //LOG_H

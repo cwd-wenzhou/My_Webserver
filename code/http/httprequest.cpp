@@ -9,6 +9,14 @@
 #include "httprequest.h"
 using namespace std;
 
+
+const unordered_set<string> HttpRequest::DEFAULT_HTML{
+            "/index", "/register", "/login",
+             "/welcome", "/video", "/picture", };
+
+const unordered_map<string, int> HttpRequest::DEFAULT_HTML_TAG {
+            {"/register.html", 0}, {"/login.html", 1},  };
+            
 void HttpRequest::Init() {
     method_ = path_ = version_ = body_ = "";
     state_ = REQUEST_LINE;
@@ -187,7 +195,7 @@ bool HttpRequest::UserVerify(const string &name, const string &pwd, bool isLogin
     
     bool flag = false;
     char order[256] = { 0 };
-    MYSQL_FIELD *fields = nullptr;
+    //MYSQL_FIELD *fields = nullptr;
     MYSQL_RES *res = nullptr;
     
     if(!isLogin) { flag = true; }

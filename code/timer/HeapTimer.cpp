@@ -59,7 +59,7 @@ void HeapTimer::Shift_Down(size_t i){
 //3：把换上去的节点下沉
 void HeapTimer::Del_Node(size_t i){
         assert(i>=0 && i<heap_.size());
-        int N=heap_.size();
+        size_t N=heap_.size();
         //若i本就在最后一个，删掉就好了。
         if (i==N-1){
                 hash.erase(heap_.back().id);
