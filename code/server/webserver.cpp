@@ -10,7 +10,9 @@ WebServer::WebServer(
         int port,int trigMode,int timeoutMS,bool OptLinger,
         int sqlPort, const char* sqlUser, const  char* sqlPwd, 
         const char* dbName, int connPoolNum, int threadNum,
-        bool openLog, int logLevel, int logQueSize)
+        bool openLog, int logLevel, int logQueSize):
+        port_(port), openLinger_(OptLinger), timeoutMS_(timeoutMS), isClose_(false),
+            timer_(new HeapTimer()), threadpool_(new ThreadPool(threadNum)), epoller_(new Epoller())
 {
         srcDir_=getcwd(nullptr,256);//获取当前工作路径
         assert(srcDir_);
@@ -20,10 +22,9 @@ WebServer::WebServer(
         HttpConn::srcDir=srcDir_;
 
         Sql_Connect_Pool::Instance()->Init("localhost",sqlPort,sqlUser,sqlPwd,dbName,connPoolNum);
-
         InitEventMode_(trigMode);
         if(!InitSocket_()) { isClose_ = true;}
-
+        
         //若开启log，那么开始记录
         if (openLog){
                 Log::Instance()->Init(logLevel,"./log",".log",logQueSize);
@@ -39,7 +40,7 @@ WebServer::WebServer(
                         Log_Info("SqlConnPool num: %d, ThreadPool num: %d", connPoolNum, threadNum);
                 }
         }
-}
+}      
 
 WebServer::~WebServer()
 {
@@ -77,11 +78,12 @@ void WebServer::InitEventMode_(int trigMode){
 bool WebServer::InitSocket_(){
         int ret;
         struct sockaddr_in addr;
+        //cout<<"run here"<<endl;
         if (port_>65535 || port_<1024){
                 Log_Error("Port:%d error",port_);
                 return false;
         }
-
+        //cout<<"run here1"<<endl;
         addr.sin_family = AF_INET;//TCP/IP
         addr.sin_addr.s_addr = htonl(INADDR_ANY);
         addr.sin_port = htons(port_);
@@ -141,6 +143,7 @@ bool WebServer::InitSocket_(){
                 return true;
         }
         SetFdNonblock(listenFd_);
+        //cout<<port_<<endl;
         Log_Info("Server port:%d",port_);
         return true;
 }
@@ -277,11 +280,15 @@ EPOLLHUP：表示对应的文件描述符被挂断；
 */
 void WebServer::Start(){
         int timeMS=-1;//epoll wait timeout == -1 无事件将阻塞
-        if (!isClose_)
+        if (!isClose_){
                 Log_Info("===============SERVET  START=============");
+                
+        }
+                
         while (!isClose_){
                 //把超时的线程都清出去
                 //并获得下一次出现超时线程的时间timeMS
+                //cout<<"run here!!!!!!!!"<<endl;
                 if(timeoutMS_ > 0) {
                         timeMS = timer_->Get_Next_Tick();
                 }
@@ -291,6 +298,7 @@ void WebServer::Start(){
 
                 for (int i=0;i<eventCnt;i++){
                         //处理epoll里wait到的事件
+                        //cout<<"run here!!!!!!!!"<<endl;
                         int fd = epoller_->GetEventFd(i);
                         uint32_t events=epoller_->GetEvents(i);
 
