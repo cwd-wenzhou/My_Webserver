@@ -206,6 +206,11 @@ void WebServer::CloseConn_(HttpConn* client){
  }
 
 //更新一下超时时间，把Onwrite加入到线程池
+
+
+//注意此处，主线程往请求队列里添加任务，也需要对请求队列加锁，这里会消耗时间
+//线程池内的工作线程从请求队列的拿取任务执行，也需要加锁。
+//这是这种半同步/半反应堆模式的缺点
  void WebServer::DealWrite_(HttpConn* client){
         assert(client);
         ExtentTime_(client);
