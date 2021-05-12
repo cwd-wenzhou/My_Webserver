@@ -22,6 +22,9 @@
 #define MAX_EVENT_NUMBER 1024
 #define PROCESS_LIMIT 65535
 
+int sig_pipefd[2];
+bool stop_child = false; //子进程的标志位
+
 struct client_data
 {
     sockaddr_in address;  //客户端的socket地址
@@ -30,16 +33,7 @@ struct client_data
     int pipefd[2];   //和父进程通信用的管道
 };
 
-static const char* shm_name = "/my_shm";
-int sig_pipefd[2];
-int epollfd;
-int listenfd;
-int shmfd;
-char* share_mem =nullptr;
-client_data* users = nullptr; //客户连接数组。进程用客户连接的编号来索引这个数组，即可取得相关的客户连接数据
-int* sub_prcess = nullptr;//子进程和客户连接的映射关系表。用进程pid索引这个数组，取得该进程处理的客户连接的编号
-int user_count =0; //当前的客户数量
-bool stop_child = false; //子进程的标志位
+
 
 int setnoblocking(int fd){
     int old_option = fcntl(fd,F_GETFL);
@@ -76,14 +70,6 @@ void addsig(int sig,void (*handler)(int),bool restart = true)
     assert(sigaction(sig,&sa,NULL)!=-1);//捕获到信号sig，使用sa中规定的方法处理
 }
 
-void delete_resources()
-{
-    close(sig_pipefd[0]);
-    close(sig_pipefd[1]);
-    close(epollfd);
-    close(listenfd);
-    shm_unlink(shm_name);
-}
 
 //关掉子进程
 void child_term_handler(int sig)
@@ -175,6 +161,19 @@ int main(int argc, char const *argv[])
     const char* ip = argv[1];
     int port = atoi(argv[2]);
 
+    static const char* shm_name = "/my_shm";
+    
+    int listenfd;
+    int* sub_prcess = nullptr;//子进程和客户连接的映射关系表。用进程pid索引这个数组，取得该进程处理的客户连接的编号
+    
+    //初始化users以及hash表
+    int user_count =0; //当前的客户数量
+    client_data* users = new client_data[USER_LIMIT+1]; //客户连接数组。进程用客户连接的编号来索引这个数组，即可取得相关的客户连接数据
+    sub_prcess = new int [PROCESS_LIMIT];
+    for (int i=0;i<PROCESS_LIMIT;i++){
+        sub_prcess[i]=-1;
+    }
+
     //socket的一套，建立，绑定，监听
     int ret = 0;
     struct sockaddr_in address;
@@ -192,13 +191,7 @@ int main(int argc, char const *argv[])
     ret=listen(listenfd,5);//backlog就设成5
     assert(ret!=-1);
 
-    //初始化users以及hash表
-    user_count = 0;
-    users = new client_data[USER_LIMIT+1];
-    sub_prcess = new int [PROCESS_LIMIT];
-    for (int i=0;i<PROCESS_LIMIT;i++){
-        sub_prcess[i]=-1;
-    }
+    
 
     epoll_event events[MAX_EVENT_NUMBER];
     int epollfd = epoll_create(5);
@@ -224,13 +217,13 @@ int main(int argc, char const *argv[])
         O_RDWR     Open the object for read-write access.
         O_CREAT    Create the shared memory object if it does not  exist.
     */
-    shmfd =    shm_open(shm_name,O_CREAT |O_RDWR,0666);
+    int shmfd =    shm_open(shm_name,O_CREAT |O_RDWR,0666);
     // A new shared memory object  initially  has  zero  length—the size of the object can be set using ftruncate(2).
     assert(shmfd != -1);
     ret = ftruncate(shmfd,USER_LIMIT*BUFFER_SIZE);
     assert(ret != -1);
 
-    share_mem = (char*) mmap(NULL,USER_LIMIT*BUFFER_SIZE,PROT_READ|PROT_WRITE,MAP_SHARED,shmfd,0);
+    char* share_mem = (char*) mmap(NULL,USER_LIMIT*BUFFER_SIZE,PROT_READ|PROT_WRITE,MAP_SHARED,shmfd,0);
     assert(share_mem != MAP_FAILED);
     close(shmfd);
     //开辟共享内存，建立映射，然后关掉
@@ -397,7 +390,11 @@ int main(int argc, char const *argv[])
             }
         }
     }
-    delete_resources();
+    close(sig_pipefd[0]);
+    close(sig_pipefd[1]);
+    close(epollfd);
+    close(listenfd);
+    shm_unlink(shm_name);
     return 0;
 }
 
