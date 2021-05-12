@@ -94,6 +94,7 @@ int main(int argc, char const *argv[])
                 const char* info = "too many users,pls wait\n";
                 printf("%s",info);
                 send(connfd,info,strlen(info),0);
+                close(connfd);
                 continue;
             }
             setnoblocking(connfd);
