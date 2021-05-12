@@ -191,14 +191,12 @@ int main(int argc, char const *argv[])
     ret=listen(listenfd,5);//backlog就设成5
     assert(ret!=-1);
 
-    
-
     epoll_event events[MAX_EVENT_NUMBER];
     int epollfd = epoll_create(5);
     assert(epollfd != -1);
     addfd(epollfd,listenfd);
 
-    //使用socketpair创建管道，注册pipefd[0]上的可读事件
+    //使用socketpair创建管道，注册sig_pipefd[0]上的可读事件
     ret = socketpair(PF_UNIX,SOCK_STREAM,0,sig_pipefd);//socket用于本地通信
     assert(ret != -1);
     setnoblocking(sig_pipefd[1]);
