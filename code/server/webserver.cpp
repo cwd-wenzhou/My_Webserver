@@ -51,6 +51,7 @@ WebServer::~WebServer()
 }
 
 void WebServer::InitEventMode_(int trigMode){
+        
         listenEvent_ = EPOLLRDHUP;
         connEvent_ = EPOLLONESHOT | EPOLLRDHUP;
         switch (trigMode)
@@ -138,7 +139,7 @@ bool WebServer::InitSocket_(){
         //放到epoll里面给epoll管
         ret = epoller_->AddFd(listenFd_,listenEvent_|EPOLLIN);
         if (ret ==0){
-                Log_Error("Add listen ERROR！");
+                Log_Error("Add listen ERROR!");
                 close(listenFd_);
                 return true;
         }
@@ -192,7 +193,7 @@ void WebServer::CloseConn_(HttpConn* client){
                 int fd = accept(listenFd_,(struct sockaddr*)&addr,&len);
                 if (fd<0){
                         //accept出错
-                        Log_Error("accept error");
+                        Log_Error("accept error%s", strerror(errno));
                         return;
                 }
                 else if (HttpConn::userCount>=MAX_FD){
@@ -333,6 +334,7 @@ void WebServer::Start(){
 
 int WebServer::SetFdNonblock(int fd){
         assert(fd>0);
+        //获取文件符旧的状态标志
         int flags=fcntl(fd,F_GETFD,0);
-        return fcntl(fd,F_SETFL,flags| O_NONBLOCK);
+        return fcntl(fd,F_SETFL,flags| O_NONBLOCK);//设置非阻塞状态标志并写进去。
 }

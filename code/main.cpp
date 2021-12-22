@@ -22,7 +22,7 @@ WebServer(
         );
 */
     WebServer server(
-        1316 , 3 , 60000 , false,
+        1316 , 3 , 60000 , true,
         3306,"root","1",
         "cwd_db",12,6,true,1,1024);
     server.Start();
