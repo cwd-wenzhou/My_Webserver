@@ -14,6 +14,7 @@ public:
 
             assert(threadCount > 0);//断言一下threadCount参数>0，否则直接返回异常
             for(size_t i = 0; i < threadCount; i++) {
+                //捕获外面的pool_变量
                 std::thread([pool = pool_] {
                     std::unique_lock<std::mutex> locker(pool->mtx);//unique_lock的构造函数默认直接锁上互斥量
                     while(true) {

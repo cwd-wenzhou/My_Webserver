@@ -8,7 +8,13 @@
  * read就是把fd里的东西读到buffer里
  * write就是把 iov_[2]里面的东西写到fd里面
  * close 解除文件映射，关掉连接
- * 
+ * process就是处理http连接
+ * 工作流程：
+1.初始化request；
+2.使用request去解析readbuff里面的请求报文
+3.根据request，生成对应response
+4.response向writebuffe写入报文
+5.两个缓存区 iov_[0]存入报文头 iov_[1]存入内容
  */ 
 
 #include "httpconn.h"

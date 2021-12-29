@@ -43,7 +43,7 @@ void Log::Init(int level,const char* path,const char* suffix, int maxQueueCapaci
                 isAsync_=true;
                 if (!deque_){
                         //还未初始化。申请BlockDeque空间，开启写的进程
-                        unique_ptr<BlockDeque<std::string>> newDeque(new BlockDeque<std::string>);
+                        unique_ptr<BlockDeque<std::string>> newDeque(new BlockDeque<std::string>(maxQueueCapacity));
                         deque_ = move(newDeque);//unique_ptr只能用move
 
                         std::unique_ptr<std::thread> NewThread(new thread(FlushLogThread));
