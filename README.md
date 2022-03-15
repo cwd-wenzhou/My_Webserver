@@ -2,7 +2,7 @@
 
 用C++实现的高性能WEB服务器，经过webbenchh压力测试可以实现上万的QPS
 
-绝大部分源码借鉴自https://github.com/markparticle/WebServer 
+部分源码借鉴自https://github.com/markparticle/WebServer 
 
 此仓库仅供个人学习使用
 
